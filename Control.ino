@@ -27,15 +27,17 @@ const int thresholdR = 3;
 const int forwardTimeout = 100; // in ms
 const int forwardTime = 100;
 const int turnTimeout = 100;
-const int turnTime = 150;
-const int backTime = 80;
+const int turnTime = 80;
+// const int backTime = 80;
+const int backTime = 200;
 
 // other default values
 int timeout = 50; // in ms
 int defaultSpeed = 120; // max = 256
-int turnSpeed = 200;
+int turnSpeed1 = 200; // The speed of the forward going wheel
+int turnSpeed2 = 200; // backward
 
-float extraTurn = 1.25;
+bool backLeft = true;
 
 void setup(){
   // zeg welke 'pin' invoer en uitvoer is
@@ -57,7 +59,7 @@ void loop(){
   // getAction();
   if (getAction() == 1) {
     delay(turnTimeout);
-    setMotors(1, turnSpeed, 0, int(turnSpeed * extraTurn));
+    setMotors(1, turnSpeed1, 0, turnSpeed2);
     delay(turnTime);
   }
   else if (getAction() == 0) {
@@ -67,13 +69,22 @@ void loop(){
   }
   else if (getAction() == -1) {
     delay(turnTimeout);
-    setMotors(0, int(turnSpeed * extraTurn), 1, turnSpeed);
+    setMotors(0, turnSpeed2, 1, turnSpeed1);
     delay(turnTime);
   }
   else if (getAction() == 2) {
     delay(50);
-    goBackwards(defaultSpeed);
-    delay(backTime);
+    // goBackwards(defaultSpeed);
+    // delay(backTime);
+    if (backLeft) {
+      setMotors(1, defaultSpeed, 0, defaultSpeed+100);
+      delay(backTime);
+    } else {
+      setMotors(0, defaultSpeed+100, 1, defaultSpeed);
+      delay(backTime);
+    }
+
+    backLeft = !backLeft;
   }
   stop();
 
@@ -158,6 +169,9 @@ void stop() {
 
 void setMotors(int r1, int s1, int r2, int s2) {
   // forward -> r1 = 1
+  // r1 = 1 -r1;
+  // r2 = 1 -r2;
+
   if(r1 == 1) {
     digitalWrite(controlPin1, HIGH);
     digitalWrite(controlPin2, LOW);
