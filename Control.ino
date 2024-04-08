@@ -26,18 +26,18 @@ const int thresholdR = 3;
 
 const int forwardTimeout = 100; // in ms
 const int forwardTime = 100;
-const int turnTimeout = 100;
-const int turnTime = 80;
-// const int backTime = 80;
-const int backTime = 200;
+const int turnTimeout = 150;
+const int turnTime = 100;
+const int backTime = 50;
 
 // other default values
 int timeout = 50; // in ms
 int defaultSpeed = 120; // max = 256
-int turnSpeed1 = 200; // The speed of the forward going wheel
-int turnSpeed2 = 200; // backward
+int turnSpeed1 = 200;// forward going speed
+int turnSpeed2 = 50; // backward
+int turnBackTime = 80;
 
-bool backLeft = true;
+float extraTurn = 1.25;
 
 void setup(){
   // zeg welke 'pin' invoer en uitvoer is
@@ -61,30 +61,25 @@ void loop(){
     delay(turnTimeout);
     setMotors(1, turnSpeed1, 0, turnSpeed2);
     delay(turnTime);
+    stop();
+    delay(100);
+    goBackwards(defaultSpeed, turnBackTime);
   }
   else if (getAction() == 0) {
     delay(forwardTimeout);
-    goForwards(defaultSpeed);
-    delay(forwardTime);
+    goForwards(defaultSpeed, forwardTime);
   }
   else if (getAction() == -1) {
     delay(turnTimeout);
     setMotors(0, turnSpeed2, 1, turnSpeed1);
     delay(turnTime);
+    stop();
+    delay(100);
+    goBackwards(defaultSpeed, turnBackTime);
   }
   else if (getAction() == 2) {
-    delay(50);
-    // goBackwards(defaultSpeed);
-    // delay(backTime);
-    if (backLeft) {
-      setMotors(1, defaultSpeed, 0, defaultSpeed+100);
-      delay(backTime);
-    } else {
-      setMotors(0, defaultSpeed+100, 1, defaultSpeed);
-      delay(backTime);
-    }
-
-    backLeft = !backLeft;
+    delay(150);
+    goBackwards(defaultSpeed, backTime);
   }
   stop();
 
@@ -155,12 +150,14 @@ int getInfSensor(int infpin) {
   return t;
 }
 
-void goForwards(int speed) {
+void goForwards(int speed, int time) {
   setMotors(1, speed, 1, speed);
+  delay(time);
 } 
 
-void goBackwards(int speed) {
+void goBackwards(int speed, int time) {
   setMotors(0, speed, 0, speed);
+  delay(time);
 }
 
 void stop() {
@@ -169,9 +166,6 @@ void stop() {
 
 void setMotors(int r1, int s1, int r2, int s2) {
   // forward -> r1 = 1
-  // r1 = 1 -r1;
-  // r2 = 1 -r2;
-
   if(r1 == 1) {
     digitalWrite(controlPin1, HIGH);
     digitalWrite(controlPin2, LOW);
