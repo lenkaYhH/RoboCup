@@ -21,19 +21,21 @@ float dist;
 const int rightIFpin = 12;
 const int leftIFpin = 13;
 int right, left;
-const int thresholdL = 150;
-const int thresholdR = 150;
+// const int thresholdL = 15;
+const int thresholdR = 3;
 
 const int forwardTimeout = 100; // in ms
-const int forwardTime = 50;
-const int turnTimeout = 250;
-const int turnTime = 10;
-const int backTime = 10;
+const int forwardTime = 100;
+const int turnTimeout = 100;
+const int turnTime = 150;
+const int backTime = 80;
 
 // other default values
 int timeout = 50; // in ms
 int defaultSpeed = 120; // max = 256
 int turnSpeed = 200;
+
+float extraTurn = 1.25;
 
 void setup(){
   // zeg welke 'pin' invoer en uitvoer is
@@ -54,29 +56,26 @@ void setup(){
 void loop(){
   // getAction();
   if (getAction() == 1) {
-    stop();
     delay(turnTimeout);
-    setMotors(1, turnSpeed, 0, turnSpeed);
+    setMotors(1, turnSpeed, 0, int(turnSpeed * extraTurn));
     delay(turnTime);
   }
   else if (getAction() == 0) {
-    stop();
     delay(forwardTimeout);
     goForwards(defaultSpeed);
     delay(forwardTime);
   }
   else if (getAction() == -1) {
-    stop();
     delay(turnTimeout);
-    setMotors(0, turnSpeed, 1, turnSpeed);
+    setMotors(0, int(turnSpeed * extraTurn), 1, turnSpeed);
     delay(turnTime);
   }
   else if (getAction() == 2) {
-    stop();
-    delay(10);
+    delay(50);
     goBackwards(defaultSpeed);
     delay(backTime);
   }
+  stop();
 
 }
 
@@ -88,19 +87,29 @@ int getAction() {
   // forward is 0
   // turn left is -1 
   // backwards is 2
-  right = getInfSensor(rightIFpin);
-  left = getInfSensor(leftIFpin);
+  pinMode(rightIFpin, OUTPUT);
+  pinMode(leftIFpin, OUTPUT);
+  digitalWrite(rightIFpin, HIGH);
+  digitalWrite(leftIFpin, HIGH);
+  delay(1);
+  pinMode(rightIFpin, INPUT);
+  pinMode(leftIFpin, INPUT);
+  delay(thresholdR);
 
-  Serial.print(left);
-  Serial.print("\t");
-  Serial.println(right);
-  if ((right > thresholdR) && (left > thresholdL)) {
+  right = digitalRead(rightIFpin) == HIGH;
+  left = digitalRead(leftIFpin) == HIGH;
+
+
+  // Serial.print(left);
+  // Serial.print("\t");
+  // Serial.println(right);
+  if (right && left) {
     return 2;
   }
-  if (right > thresholdR) {
+  if (right) {
     return 1;
   }
-  if (left > thresholdL) {
+  if (left) {
     return -1;
   }
   return 0;
