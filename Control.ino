@@ -18,9 +18,12 @@ long duration;
 float dist;
 
 // Infrared pins
-const int rightIFpin = 12;
-const int leftIFpin = 13;
-int right, left;
+// const int rightIFpin = 12;
+// const int leftIFpin = 13;
+// int right, left;
+// left to right order
+const int IFpins[5] = [12, 13, 14, 15, 16]
+
 // const int thresholdL = 15;
 const int thresholdR = 3;
 
@@ -56,59 +59,95 @@ void setup(){
 
 
 void loop(){
+  println(getInfSensor(2) + " " + getInfSensor(3));
   // getAction();
-  if (getAction() == 1) {
-    delay(turnTimeout);
-    setMotors(1, turnSpeed1, 0, turnSpeed2);
-    delay(turnTime);
-  }
-  else if (getAction() == 0) {
-    delay(forwardTimeout);
-    goForwards(defaultSpeed);
-    delay(forwardTime);
-  }
-  else if (getAction() == -1) {
-    delay(turnTimeout);
-    setMotors(0, turnSpeed2, 1, turnSpeed1);
-    delay(turnTime);
-  }
-  else if (getAction() == 2) {
-    delay(50);
-    // goBackwards(defaultSpeed);
-    // delay(backTime);
-    if (backLeft) {
-      setMotors(1, defaultSpeed, 0, defaultSpeed+100);
-      delay(backTime);
-    } else {
-      setMotors(0, defaultSpeed+100, 1, defaultSpeed);
-      delay(backTime);
-    }
+  // if (getAction() == 1) {
+  //   delay(turnTimeout);
+  //   setMotors(1, turnSpeed1, 0, turnSpeed2);
+  //   delay(turnTime);
+  // }
+  // else if (getAction() == 0) {
+  //   delay(forwardTimeout);
+  //   goForwards(defaultSpeed);
+  //   delay(forwardTime);
+  // }
+  // else if (getAction() == -1) {
+  //   delay(turnTimeout);
+  //   setMotors(0, turnSpeed2, 1, turnSpeed1);
+  //   delay(turnTime);
+  // }
+  // else if (getAction() == 2) {
+  //   delay(50);
+  //   // goBackwards(defaultSpeed);
+  //   // delay(backTime);
+  //   if (backLeft) {
+  //     setMotors(1, defaultSpeed, 0, defaultSpeed+100);
+  //     delay(backTime);
+  //   } else {
+  //     setMotors(0, defaultSpeed+100, 1, defaultSpeed);
+  //     delay(backTime);
+  //   }
 
-    backLeft = !backLeft;
-  }
-  stop();
+  //   backLeft = !backLeft;
+  // }
+  // stop();
 
 }
 
 
 // CAR CONTROL FUNCTIONS ----------------------
 
+int retBlackSensor() {
+  // NEVER TESTED, PROCEED WITH CAUTION
+  // sensor numbers from left to right: -2 1 0 1 2
+  // this function returns which sensor is detecting black
+  // if two or more sensors are detecting black, it outputs the furtherest one (i.e. if both 0 and 1 are on black, it outputs 1)
+
+  int blackSensor = 0;
+
+  for (int sensorNum=-2; sensorNum<3; sensorNum++) {
+
+    pinMode(IFpins[sensorNum], OUTPUT);
+    pinMode(IFpins[sensorNum], OUTPUT);
+    digitalWrite(IFpins[sensorNum], HIGH);
+    digitalWrite(IFpins[sensorNum], HIGH);
+    delay(1);
+    pinMode(IFpins[sensorNum], INPUT);
+    pinMode(IFpins[sensorNum], INPUT);
+    delay(IFpins[sensorNum]);
+
+
+    // sensorNum+2 because the leftmost sensor (sensorNum = 2) has pin index of 0 (in the IFpins list declare at the very top)
+    sensorIsBlack = digitalRead(IFpins[sensorNum+2]) == HIGH;
+
+    // if the sensor touches the black line, then update the return value (to the furtherest one)
+    if(sensorIsBlack) {
+      
+      if (abs(sensorIsBlack)) > abs(blackSensor)) {
+        blackSensor = sensorNum
+      }
+    }
+  }
+
+  return blackSensor;
+}
+
 int getAction() {
   // turn right is 1 
   // forward is 0
   // turn left is -1 
   // backwards is 2
-  pinMode(rightIFpin, OUTPUT);
-  pinMode(leftIFpin, OUTPUT);
-  digitalWrite(rightIFpin, HIGH);
-  digitalWrite(leftIFpin, HIGH);
-  delay(1);
-  pinMode(rightIFpin, INPUT);
-  pinMode(leftIFpin, INPUT);
-  delay(thresholdR);
+    pinMode(rightIFpin, OUTPUT);
+    pinMode(leftIFpin, OUTPUT);
+    digitalWrite(rightIFpin, HIGH);
+    digitalWrite(leftIFpin, HIGH);
+    delay(1);
+    pinMode(rightIFpin, INPUT);
+    pinMode(leftIFpin, INPUT);
+    delay(thresholdR);
 
-  right = digitalRead(rightIFpin) == HIGH;
-  left = digitalRead(leftIFpin) == HIGH;
+    right = digitalRead(rightIFpin) == HIGH;
+    left = digitalRead(leftIFpin) == HIGH;
 
 
   // Serial.print(left);
