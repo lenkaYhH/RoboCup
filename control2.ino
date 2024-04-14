@@ -134,6 +134,13 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
 
+  pinMode(controlPin1, OUTPUT);
+  pinMode(controlPin2, OUTPUT);
+  pinMode(enablePin, OUTPUT);
+  pinMode(controlPin12, OUTPUT);
+  pinMode(controlPin22, OUTPUT);
+  pinMode(enablePin2, OUTPUT);
+  
   // init integralList and integralTime
   for(int i=0;i<128;i++){
     integralList[i] = 0;
