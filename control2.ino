@@ -125,7 +125,7 @@ void calTurn(){
   
 }
 
-void controller(){
+void controller() {
   calTurn();
   setMotors(max(maxTurn,min(minTurn, forwardSpeed-turnFactor)), max(maxTurn,min(minTurn, forwardSpeed+turnFactor)));
 }
