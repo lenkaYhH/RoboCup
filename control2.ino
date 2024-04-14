@@ -104,7 +104,7 @@ void readSensor(){
       }
     }
     // adjust for number of value added, make sure result is an integer;
-    sensorPos = 60/blacknum*sensorPos;
+    sensorPos = 12/blacknum*sensorPos;
   }
 }
 
