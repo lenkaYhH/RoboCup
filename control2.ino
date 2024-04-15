@@ -5,9 +5,11 @@ int pins[5] = {13,12,11,8,5}; //left to right pins for ir sensor
 
 #define threshold 20
 
-#define k 20.0 // coefficient for error, type is float
-#define kd 2.0 // coefficient for derivative of error
-#define ki 0.0 // coefficient for integral of error
+#define k 35.0 // coefficient for error, type is float
+#define kd 10.0 // coefficient for derivative of error
+#define ki 35.0 // coefficient for integral of error
+
+#define iDur 128 // length of array
 
 // 2, 3, 9 is the left motor
 #define controlPin1 2 // aangesloten aan pin 7 van de H-bridge
@@ -23,8 +25,9 @@ int pins[5] = {13,12,11,8,5}; //left to right pins for ir sensor
 
 #define forwardSpeed 60 // forward speed
 #define maxTurn 180 // max forward speed
-#define minTurn -200 // max backward speed
+#define minTurn -220 // max backward speed
 
+//#define reduceTurn ((int) ((turnFactor>0)? turnFactor*0.2 : -turnFactor*0.2)) // when turning speed is reduced by this*turnfactor
 
 bool sensors[5] = {false,false,false,false,false};
 int sensorPos = 0;
@@ -34,8 +37,8 @@ unsigned long prevTime = 0;
 int prevPos=0;
 
 // data required to do integral of error
-int integralList[128]; // The value of prev 128 error
-int integralTime[128]; // The duration of the prev 128 error
+int integralList[iDur]; // The value of prev 128 error
+int integralTime[iDur]; // The duration of the prev 128 error
 int integralIndex=0; // point at the current overwriting value in list
 long integralSum = 0;// won't overflow
 int totalTime = 0;
@@ -124,7 +127,7 @@ void calTurn(){
   integralSum += sensorPos*(curTime-prevTime);
   totalTime += (int)(curTime-prevTime);
   integralIndex++;
-  if (integralIndex==128)integralIndex=0;
+  if (integralIndex==iDur)integralIndex=0;
   // turn factor
   turnFactor = (int)(integralSum*ki/totalTime + (sensorPos-prevPos)*kd/max(1,(curTime-prevTime)) + k*sensorPos);
   
