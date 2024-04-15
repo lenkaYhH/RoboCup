@@ -16,13 +16,13 @@ int pins[5] = {13,12,11,8,5}; //left to right pins for ir sensor
 #define enablePin2 10   // aangesloten aan pin 9 van de H-bridge
 
 
-#define k 15.0 // coefficient for error, type is float
-#define kd 0.0 // coefficient for derivative of error
+#define k 25.0 // coefficient for error, type is float
+#define kd 2.5 // coefficient for derivative of error
 #define ki 0.0 // coefficient for integral of error
 
-#define forwardSpeed 120 // forward speed
-#define maxTurn 240 // max forward speed
-#define minTurn -20 // max backward speed
+#define forwardSpeed 80 // forward speed
+#define maxTurn 180 // max forward speed
+#define minTurn -200 // max backward speed
 
 
 bool sensors[5] = {false,false,false,false,false};
@@ -131,12 +131,24 @@ void calTurn(){
 
 void controller() {
   calTurn();
+  // Serial.println(turnFactor);
+  // Serial.print("\t");
+  // for (bool i:sensors){
+  //   Serial.print(i);
+  //   Serial.print(", ");
+  // }
+  if (sensorPos!=prevPos){
+    setMotors(0,0);
+    //delay(50);
+  }
   setMotors(min(maxTurn,max(minTurn, forwardSpeed+turnFactor)), min(maxTurn,max(minTurn, forwardSpeed-turnFactor)));
+  prevTime = millis();
+  prevPos = sensorPos;
 }
 
 void setup() {
   // put your setup code here, to run once:
-  //Serial.begin(9600); 
+  Serial.begin(9600); 
   // do not do this, this mess up pin 0 and 1
 
   // set mode for motor pins
