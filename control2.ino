@@ -1,28 +1,32 @@
-int pins[5] = {13,12,11,8,1}; //left to right pins for ir sensor
+// Constants
+// Please use define instead of creating variable
+
+int pins[5] = {13,12,11,8,5}; //left to right pins for ir sensor
+
+#define threshold 20
 
 // 2, 3, 9 is the left motor
-const int controlPin1 = 2; // aangesloten aan pin 7 van de H-bridge
-const int controlPin2 = 3; // aangesloten aan pin 2 van de H-bridge
-const int enablePin = 9;   // aangesloten aan pin 1 van de H-bridge
+#define controlPin1 2 // aangesloten aan pin 7 van de H-bridge
+#define controlPin2 3 // aangesloten aan pin 2 van de H-bridge
+#define enablePin 9   // aangesloten aan pin 1 van de H-bridge
 
 // 6, 7, 10 is the right motor
-const int controlPin12 = 6; // aangesloten aan pin 15 van de H-bridge
-const int controlPin22 = 7; // aangesloten aan pin 10 van de H-bridge
-const int enablePin2 = 10;   // aangesloten aan pin 9 van de H-bridge
+#define controlPin12 6 // aangesloten aan pin 15 van de H-bridge
+#define controlPin22 7 // aangesloten aan pin 10 van de H-bridge
+#define enablePin2 10   // aangesloten aan pin 9 van de H-bridge
 
 
-float ki=0;// coefficient for integral of error
-float kd=0;// coefficient for derivative of error
-float k=1;// coefficient for error
+#define k 15.0 // coefficient for error, type is float
+#define kd 0.0 // coefficient for derivative of error
+#define ki 0.0 // coefficient for integral of error
 
-int forwardSpeed = 120; // forward speed
-int maxTurn = 120; // max forward speed
-int minTurn = -20; // max backward speed
+#define forwardSpeed 120 // forward speed
+#define maxTurn 240 // max forward speed
+#define minTurn -20 // max backward speed
 
 
 bool sensors[5] = {false,false,false,false,false};
 int sensorPos = 0;
-const int threshold = 6;
 
 // data required to calculate de/dt
 unsigned long prevTime = 0;
@@ -35,7 +39,7 @@ int integralIndex=0; // point at the current overwriting value in list
 long integralSum = 0;// won't overflow
 int totalTime = 0;
 
-int turnFactor;
+int turnFactor; // >0:turning right, <0:turning left
 
 // current activity
 // 0:nothing, 1:going forward, 2:going backward, 3:turning left, 4:turning right
@@ -127,20 +131,22 @@ void calTurn(){
 
 void controller() {
   calTurn();
-  setMotors(max(maxTurn,min(minTurn, forwardSpeed-turnFactor)), max(maxTurn,min(minTurn, forwardSpeed+turnFactor)));
+  setMotors(min(maxTurn,max(minTurn, forwardSpeed+turnFactor)), min(maxTurn,max(minTurn, forwardSpeed-turnFactor)));
 }
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  //Serial.begin(9600); 
+  // do not do this, this mess up pin 0 and 1
 
+  // set mode for motor pins
   pinMode(controlPin1, OUTPUT);
   pinMode(controlPin2, OUTPUT);
   pinMode(enablePin, OUTPUT);
   pinMode(controlPin12, OUTPUT);
   pinMode(controlPin22, OUTPUT);
   pinMode(enablePin2, OUTPUT);
-  
+
   // init integralList and integralTime
   for(int i=0;i<128;i++){
     integralList[i] = 0;
