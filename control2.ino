@@ -5,6 +5,10 @@ int pins[5] = {13,12,11,8,5}; //left to right pins for ir sensor
 
 #define threshold 20
 
+#define k 20.0 // coefficient for error, type is float
+#define kd 2.0 // coefficient for derivative of error
+#define ki 0.0 // coefficient for integral of error
+
 // 2, 3, 9 is the left motor
 #define controlPin1 2 // aangesloten aan pin 7 van de H-bridge
 #define controlPin2 3 // aangesloten aan pin 2 van de H-bridge
@@ -16,11 +20,8 @@ int pins[5] = {13,12,11,8,5}; //left to right pins for ir sensor
 #define enablePin2 10   // aangesloten aan pin 9 van de H-bridge
 
 
-#define k 25.0 // coefficient for error, type is float
-#define kd 2.5 // coefficient for derivative of error
-#define ki 0.0 // coefficient for integral of error
 
-#define forwardSpeed 80 // forward speed
+#define forwardSpeed 60 // forward speed
 #define maxTurn 180 // max forward speed
 #define minTurn -200 // max backward speed
 
@@ -131,12 +132,12 @@ void calTurn(){
 
 void controller() {
   calTurn();
-  // Serial.println(turnFactor);
-  // Serial.print("\t");
-  // for (bool i:sensors){
-  //   Serial.print(i);
-  //   Serial.print(", ");
-  // }
+  Serial.println(turnFactor);
+  Serial.print("\t");
+  for (bool i:sensors){
+    Serial.print(i);
+    Serial.print(", ");
+  }
   if (sensorPos!=prevPos){
     setMotors(0,0);
     //delay(50);
