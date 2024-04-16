@@ -1,7 +1,7 @@
 // Constants
 // Please use define instead of creating variable
 
-int pins[5] = {13,12,11,8,5}; //left to right pins for ir sensor
+int pins[5] = {52,50,48,46,44}; //left to right pins for ir sensor
 
 #define threshold 20
 
@@ -14,14 +14,16 @@ int pins[5] = {13,12,11,8,5}; //left to right pins for ir sensor
 // 2, 3, 9 is the left motor
 #define controlPin1 2 // aangesloten aan pin 7 van de H-bridge
 #define controlPin2 3 // aangesloten aan pin 2 van de H-bridge
-#define enablePin 9   // aangesloten aan pin 1 van de H-bridge
+#define enablePin 4   // aangesloten aan pin 1 van de H-bridge
 
 // 6, 7, 10 is the right motor
-#define controlPin12 6 // aangesloten aan pin 15 van de H-bridge
-#define controlPin22 7 // aangesloten aan pin 10 van de H-bridge
-#define enablePin2 10   // aangesloten aan pin 9 van de H-bridge
+#define controlPin12 5 // aangesloten aan pin 15 van de H-bridge
+#define controlPin22 6 // aangesloten aan pin 10 van de H-bridge
+#define enablePin2 7  // aangesloten aan pin 9 van de H-bridge
 
-
+// Ultrasonic
+#define trigPin1 4
+#define echoPin1 5
 
 #define forwardSpeed 60 // forward speed
 #define maxTurn 180 // max forward speed
@@ -49,6 +51,9 @@ int turnFactor; // >0:turning right, <0:turning left
 // 0:nothing, 1:going forward, 2:going backward, 3:turning left, 4:turning right
 int current = 0;
 
+//ultrasonic
+float dist1; // distance in cm
+
 void setMotors(int s1, int s2) {
   // move motors at s1, s2
   if(s1 > 0) {
@@ -75,6 +80,17 @@ void setMotors(int s1, int s2) {
   analogWrite(enablePin2, abs(s2));  
 }
 
+// ULTRASONIC FUNCTIONS -------------------
+void getDistance() {
+   digitalWrite(trigPin1, LOW);
+   delayMicroseconds(5);
+   digitalWrite(trigPin1, HIGH);
+   delayMicroseconds(10);
+   digitalWrite(trigPin1, LOW);
+
+  // time out is optional and in ms, duration is in ms
+   dist1 = pulseIn(echoPin1, HIGH) * 0.017;
+}
 
 void readSensor(){
   // read data from sensor and store result in sensorPos
@@ -162,6 +178,10 @@ void setup() {
   pinMode(controlPin12, OUTPUT);
   pinMode(controlPin22, OUTPUT);
   pinMode(enablePin2, OUTPUT);
+
+  // set mode for ultrasonic
+  pinMode(trigPin1, OUTPUT);
+  pinMode(echoPin1, INPUT);
 
   // init integralList and integralTime
   for(int i=0;i<128;i++){
