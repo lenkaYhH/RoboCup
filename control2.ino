@@ -17,22 +17,28 @@ int pins[5] = {52,50,48,46,44}; //left to right pins for ir sensor
 #define enablePin 4   // aangesloten aan pin 1 van de H-bridge
 
 // 6, 7, 10 is the right motor
-#define controlPin12 5 // aangesloten aan pin 15 van de H-bridge
+#define controlPin12 7 // aangesloten aan pin 15 van de H-bridge
 #define controlPin22 6 // aangesloten aan pin 10 van de H-bridge
-#define enablePin2 7  // aangesloten aan pin 9 van de H-bridge
+#define enablePin2 5  // aangesloten aan pin 9 van de H-bridge
 
 // Ultrasonic
-#define trigPin1 4
-#define echoPin1 5
+#define trigPinFront 4
+#define echoPinFront 5
+#define trigPinSide 10 // side one is on the left
+#define echoPinSide 11
+float distFront, distSide;
+#define distThreshold 15
+const int distThresholdSide = distThreshold + 3;
+#define forwardTime 50 
 
+// Line Tracking
 #define forwardSpeed 60 // forward speed
 #define maxTurn 180 // max forward speed
 #define minTurn -220 // max backward speed
 
-//#define reduceTurn ((int) ((turnFactor>0)? turnFactor*0.2 : -turnFactor*0.2)) // when turning speed is reduced by this*turnfactor
-
 bool sensors[5] = {false,false,false,false,false};
 int sensorPos = 0;
+int blacknum = 0;
 
 // data required to calculate de/dt
 unsigned long prevTime = 0;
@@ -51,9 +57,7 @@ int turnFactor; // >0:turning right, <0:turning left
 // 0:nothing, 1:going forward, 2:going backward, 3:turning left, 4:turning right
 int current = 0;
 
-//ultrasonic
-float dist1; // distance in cm
-
+// MOTOR CONTROL -------------------------
 void setMotors(int s1, int s2) {
   // move motors at s1, s2
   if(s1 > 0) {
@@ -80,18 +84,55 @@ void setMotors(int s1, int s2) {
   analogWrite(enablePin2, abs(s2));  
 }
 
-// ULTRASONIC FUNCTIONS -------------------
-void getDistance() {
-   digitalWrite(trigPin1, LOW);
-   delayMicroseconds(5);
-   digitalWrite(trigPin1, HIGH);
-   delayMicroseconds(10);
-   digitalWrite(trigPin1, LOW);
+// ULTRASONIC ----------------------------
+void getDistance(int x) { // x = 1 is front, x = 0 is side
+  if (x) {
+    digitalWrite(trigPinFront, LOW);
+    delayMicroseconds(5);
+    digitalWrite(trigPinFront, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPinFront, LOW);
 
-  // time out is optional and in ms, duration is in ms
-   dist1 = pulseIn(echoPin1, HIGH) * 0.017;
+    distFront = pulseIn(echoPinFront, HIGH) * 0.017;
+
+  } else {
+    digitalWrite(trigPinSide, LOW);
+    delayMicroseconds(5);
+    digitalWrite(trigPinSide, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPinSide, LOW);
+
+    distSide = pulseIn(echoPinSide, HIGH) * 0.017;
+  }
 }
 
+void checkObject() {
+  getDistance(1);
+  if (distFront < distThreshold) {
+    setMotors(forwardSpeed, -forwardSpeed);
+    getDistance(0);
+    while (distSide > distThresholdSide) {
+      getDistance(0);
+    }
+    setMotors(0, 0);
+
+    while (blacknum == 0) {
+      setMotors(forwardSpeed, forwardSpeed);
+      delay(forwardTime);
+      setMotors(0, 0);
+      setMotors(-forwardSpeed, forwardSpeed);
+      getDistance(0);
+      while (distSide > distThresholdSide) {
+        getDistance(0);
+      }
+      setMotors(0, 0);
+      readSensor();
+    }
+       
+  }
+}
+
+// IR ------------------------------------
 void readSensor(){
   // read data from sensor and store result in sensorPos
   // note: sensors should not be referenced in outside scope
@@ -119,7 +160,7 @@ void readSensor(){
   }
 
   if(changed){// if changed, get new pos
-    int blacknum = 0;
+    blacknum = 0;
     sensorPos=0;
     for(int i=0;i<5;i++){
       if(sensors[i]){
@@ -166,8 +207,17 @@ void controller() {
   prevPos = sensorPos;
 }
 
+// COLOR SENSOR -------------------------
+void colorChecker() {
+  if (blacknum == 5) {
+    setMotors(0, 0);
+
+  }
+}
+
+
+// SETUP & LOOP -------------------------
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(9600); 
   // do not do this, this mess up pin 0 and 1
 
@@ -180,8 +230,10 @@ void setup() {
   pinMode(enablePin2, OUTPUT);
 
   // set mode for ultrasonic
-  pinMode(trigPin1, OUTPUT);
-  pinMode(echoPin1, INPUT);
+  pinMode(trigPinFront, OUTPUT);
+  pinMode(echoPinFront, INPUT);
+  pinMode(trigPinSide, OUTPUT);
+  pinMode(echoPinSide, INPUT);
 
   // init integralList and integralTime
   for(int i=0;i<128;i++){
@@ -191,7 +243,7 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  // checkObject();
   readSensor();
   controller();
 }
