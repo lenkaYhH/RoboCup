@@ -5,11 +5,11 @@ int pins[5] = {52,50,48,46,44}; //left to right pins for ir sensor
 
 #define threshold 20
 
-#define k 45.0 // coefficient for error, type is float
-#define kd 20.0 // coefficient for derivative of error
-#define ki 35.0 // coefficient for integral of error
+#define k 30.0 // coefficient for error, type is float
+#define kd 8.0 // coefficient for derivative of error
+#define ki 50.0 // coefficient for integral of error
 
-#define iDur 128 // length of array
+#define iDur 96 // length of array
 
 // 2, 3, 9 is the left motor
 #define controlPin1 2 // aangesloten aan pin 7 van de H-bridge
@@ -211,7 +211,7 @@ void controller() {
   // }
   if (sensorPos!=prevPos){
     setMotors(0,0);
-    //delay(50);
+    // delay(50);
   }
   setMotors(min(maxTurn,max(minTurn, forwardSpeed+turnFactor)), min(maxTurn,max(minTurn, forwardSpeed-turnFactor)));
   prevTime = millis();
