@@ -5,8 +5,8 @@ int pins[5] = {52,50,48,46,44}; //left to right pins for ir sensor
 
 #define threshold 20
 
-#define k 35.0 // coefficient for error, type is float
-#define kd 10.0 // coefficient for derivative of error
+#define k 45.0 // coefficient for error, type is float
+#define kd 20.0 // coefficient for derivative of error
 #define ki 35.0 // coefficient for integral of error
 
 #define iDur 128 // length of array
@@ -22,17 +22,17 @@ int pins[5] = {52,50,48,46,44}; //left to right pins for ir sensor
 #define enablePin2 5  // aangesloten aan pin 9 van de H-bridge
 
 // Ultrasonic
-#define trigPinFront 4
-#define echoPinFront 5
+#define trigPinFront 8
+#define echoPinFront 9
 #define trigPinSide 10 // side one is on the left
 #define echoPinSide 11
 float distFront, distSide;
 #define distThreshold 15
-const int distThresholdSide = distThreshold + 3;
+const int distThresholdSide = distThreshold + 6;
 #define forwardTime 50 
 
 // Line Tracking
-#define forwardSpeed 60 // forward speed
+#define forwardSpeed 80 // forward speed
 #define maxTurn 180 // max forward speed
 #define minTurn -220 // max backward speed
 
@@ -84,6 +84,12 @@ void setMotors(int s1, int s2) {
   analogWrite(enablePin2, abs(s2));  
 }
 
+float getDelay(int pin){
+  float de = pulseIn(pin, HIGH, 10000L) * 0.017;
+  if (de==0.0)de=170.0;
+  return de;
+}
+
 // ULTRASONIC ----------------------------
 void getDistance(int x) { // x = 1 is front, x = 0 is side
   if (x) {
@@ -93,7 +99,7 @@ void getDistance(int x) { // x = 1 is front, x = 0 is side
     delayMicroseconds(10);
     digitalWrite(trigPinFront, LOW);
 
-    distFront = pulseIn(echoPinFront, HIGH) * 0.017;
+    distFront = getDelay(echoPinFront);
 
   } else {
     digitalWrite(trigPinSide, LOW);
@@ -102,16 +108,19 @@ void getDistance(int x) { // x = 1 is front, x = 0 is side
     delayMicroseconds(10);
     digitalWrite(trigPinSide, LOW);
 
-    distSide = pulseIn(echoPinSide, HIGH) * 0.017;
+    distSide = getDelay(echoPinSide);
   }
 }
 
 void checkObject() {
   getDistance(1);
   if (distFront < distThreshold) {
-    setMotors(forwardSpeed, -forwardSpeed);
+    setMotors(0, 0);
+    delay(100);
+    setMotors(100, -100);
     getDistance(0);
     while (distSide > distThresholdSide) {
+      // Serial.println(distSide);
       getDistance(0);
     }
     setMotors(0, 0);
@@ -120,12 +129,14 @@ void checkObject() {
       setMotors(forwardSpeed, forwardSpeed);
       delay(forwardTime);
       setMotors(0, 0);
-      setMotors(-forwardSpeed, forwardSpeed);
+      delay(50);
+      setMotors(100, -100);
       getDistance(0);
       while (distSide > distThresholdSide) {
         getDistance(0);
       }
       setMotors(0, 0);
+      delay(100);
       readSensor();
     }
        
@@ -192,12 +203,12 @@ void calTurn(){
 
 void controller() {
   calTurn();
-  Serial.println(turnFactor);
-  Serial.print("\t");
-  for (bool i:sensors){
-    Serial.print(i);
-    Serial.print(", ");
-  }
+  // Serial.println(turnFactor);
+  // Serial.print("\t");
+  // for (bool i:sensors){
+  //   Serial.print(i);
+  //   Serial.print(", ");
+  // }
   if (sensorPos!=prevPos){
     setMotors(0,0);
     //delay(50);
