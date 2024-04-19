@@ -26,15 +26,21 @@ int pins[5] = {52,50,48,46,44}; //left to right pins for ir sensor
 #define echoPinFront 9
 #define trigPinSide 10 // side one is on the left
 #define echoPinSide 11
-float distFront, distSide;
-#define distThreshold 10
-float distThresholdSide;
-#define forwardTime 50 
 
 // Line Tracking
 #define forwardSpeed 80 // forward speed
 #define maxTurn 180 // max forward speed
 #define minTurn -220 // max backward speed
+
+// obstacles avoiding
+#define curvingSpeed 80 
+#define nudgeFactor 50 // how much does the car turn when avoiding obstacles based on increasing/decreasing distance
+#define turnRadius 10 // radius for turning
+#define distThreshold 10
+#define distThresholdSide 25
+#define curvingTime 800
+#define afterObjTime 500 // time spent turning right after getting over obstacles 
+float distFront, distSide;
 
 bool sensors[5] = {false,false,false,false,false};
 int sensorPos = 0;
@@ -90,6 +96,17 @@ float getDelay(int pin){
   return de;
 }
 
+void blink(int n){
+  // make l light blink n times
+  for (int i=0; i<n;i++){
+    digitalWrite(13,HIGH);
+    delay(500);
+    digitalWrite(13,LOW);
+    delay(500);
+  }
+}
+
+
 // ULTRASONIC ----------------------------
 void getDistance(int x) { // x = 1 is front, x = 0 is side
   if (x == 1) {
@@ -113,15 +130,12 @@ void getDistance(int x) { // x = 1 is front, x = 0 is side
 }
 
 void checkObject() {
-  int turnspeed = 140; 
-  int nudgeTime = 300; int curvingTime = 600 // ms 
-  int prev_dist;
+  int turnspeed = 140;
   // new distance created due to curving time? d <= sqrt(threshold^2 + (vt)^2)
   // accounted by nudge time 
-  int curvingSpeed = forwardSpeed - 10; 
   getDistance(1);
   if (distFront < distThreshold) {
-    distThresholdSide = distFront + 15; // difference in distance between front sensor and side sensor
+    // turning right
     setMotors(0, 0);
     delay(100);
     setMotors(turnspeed, -turnspeed);
@@ -134,43 +148,60 @@ void checkObject() {
     while (blacknum < 2) {
     // while (true) {
       //go forward
+
+      digitalWrite(13,HIGH);
       setMotors(curvingSpeed, curvingSpeed);
       delay(curvingTime);
       getDistance(0);
-      // // go until object not detected / too far
-      // while (distSide < distThresholdSide + 5){
-      //   delay(10);
-      //   getDistance(0);
-      // }
-
+      // go until object not detected / too far
+      while (distSide < distThresholdSide + 5){
+        getDistance(0);
+        readSensor();
+        if (blacknum >= 2)goto endObj; // exit loop
+      }
       setMotors(0, 0);
+      digitalWrite(13,LOW);
+
       delay(300);
 
       setMotors(-turnspeed,turnspeed);
       getDistance(0);
-      prev_dist = distSide
       while (distSide > distThresholdSide) { // turn until object is detected
-        delay(10);
         getDistance(0);
 
-        // turns right if object is detected to be further when turning; turning too much towards object
-        // if(distSide > prev_dist){
-        //   setMotors(turnspeed,-turnspeed);
-        // }
-
-        prev_dist = distSide;
+        readSensor();
+        if (blacknum >= 2)goto endObj; // exit loop
       }
 
       setMotors(0, 0);
       delay(300);
+      
+      // nudge wiwii towards the object to account for any distance created
+      digitalWrite(13,HIGH);
+      if (turnRadius>distSide){//getting loser
+        setMotors(turnspeed,-turnspeed);
+      } else setMotors(-turnspeed,turnspeed);
+      delay((int)(nudgeFactor*abs(turnRadius-distSide)));
+      digitalWrite(13,LOW);
 
-      setMotors(-turnspeed,turnspeed); // nudge wiwii towards the object to account for any distance created
-      delay(nudgeTime);
-
-      readSensor();
+      // since it's nudged, we need to have it go forward until it see the object on it's side again
+      // go until object detected
+      setMotors(curvingSpeed, curvingSpeed);
+      while (distSide > distThresholdSide + 5){
+        getDistance(0);
+        readSensor();
+        if (blacknum >= 2)goto endObj; // exit loop
+      }
     }
-    prevTime = millis();
-    prevPos = sensorPos;
+    // Reset the data for dk
+    endObj:;
+    setMotors(0,0);
+    blink(3);
+    // turn back a bit for better ir handling 
+    setMotors(turnspeed, -turnspeed);
+    delay(afterObjTime);
+    setMotors(0,0);
+    resetIR();
   }
 }
 
@@ -213,6 +244,19 @@ void readSensor(){
     // adjust for number of value added, make sure result is an integer;
     sensorPos = 12/blacknum*sensorPos;
   }
+}
+
+void resetIR(){
+  // reset the data for ir sensor
+  
+  // init integralList and integralTime
+  for(int i=0;i<128;i++){
+    integralList[i] = 0;
+    integralTime[i] = 0;
+  }
+  readSensor();
+  prevTime = millis();
+  prevPos = sensorPos;
 }
 
 void calTurn(){
@@ -268,11 +312,11 @@ void setup() {
   pinMode(trigPinSide, OUTPUT);
   pinMode(echoPinSide, INPUT);
 
-  // init integralList and integralTime
-  for(int i=0;i<128;i++){
-    integralList[i] = 0;
-    integralTime[i] = 0;
-  }
+  resetIR();
+
+  // l light
+  pinMode(13, OUTPUT);
+  digitalWrite(13,LOW);
 }
 
 void loop() {
