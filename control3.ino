@@ -63,6 +63,8 @@ int turnFactor; // >0:turning right, <0:turning left
 // 0:nothing, 1:going forward, 2:going backward, 3:turning left, 4:turning right
 int current = 0;
 
+bool reached_end = false; // reached the end
+
 // MOTOR CONTROL -------------------------
 void setMotors(int s1, int s2) {
   // move motors at s1, s2
@@ -293,12 +295,17 @@ void setup() {
   // l light
   pinMode(13, OUTPUT);
   digitalWrite(13,LOW);
+  reached_end=false;
 }
 
 void loop() {
-  checkObject();
-  readSensor();
-  controller();
-  // getDistance(0);
-  // Serial.println(distSide);
+  if (reached_end){
+    checkObject();
+    readSensor();
+    controller();
+    // getDistance(0);
+    // Serial.println(distSide);
+  } else {
+    // do something about about .
+  }
 }
