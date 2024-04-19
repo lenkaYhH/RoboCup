@@ -249,15 +249,6 @@ void controller() {
   prevPos = sensorPos;
 }
 
-// COLOR SENSOR -------------------------
-void colorChecker() {
-  if (blacknum == 5) {
-    setMotors(0, 0);
-
-  }
-}
-
-
 // SETUP & LOOP -------------------------
 void setup() {
   Serial.begin(9600); 
