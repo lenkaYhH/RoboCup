@@ -5,11 +5,11 @@ int pins[5] = {52,50,48,46,44}; //left to right pins for ir sensor
 
 #define threshold 20
 
-#define k 25.0 // coefficient for error, type is float
-#define kd -150.0 // coefficient for derivative of error
-#define ki 75.0 // coefficient for integral of error
+#define k 50.0 // coefficient for error, type is float // 30.0
+#define kd 2.0 // coefficient for derivative of error // 8.0
+#define ki 75.0 // coefficient for integral of error // 50.0
 
-#define iDur 90 // length of array
+#define iDur 96 // length of array
 
 // 2, 3, 9 is the left motor
 #define controlPin1 2 // aangesloten aan pin 7 van de H-bridge
@@ -27,8 +27,8 @@ int pins[5] = {52,50,48,46,44}; //left to right pins for ir sensor
 #define trigPinSide 10 // side one is on the left
 #define echoPinSide 11
 float distFront, distSide;
-#define distThreshold 15
-const int distThresholdSide = distThreshold + 6;
+#define distThreshold 10
+float distThresholdSide;
 #define forwardTime 50 
 
 // Line Tracking
@@ -92,7 +92,7 @@ float getDelay(int pin){
 
 // ULTRASONIC ----------------------------
 void getDistance(int x) { // x = 1 is front, x = 0 is side
-  if (x) {
+  if (x == 1) {
     digitalWrite(trigPinFront, LOW);
     delayMicroseconds(5);
     digitalWrite(trigPinFront, HIGH);
@@ -113,33 +113,64 @@ void getDistance(int x) { // x = 1 is front, x = 0 is side
 }
 
 void checkObject() {
+  int turnspeed = 140; 
+  int nudgeTime = 300; int curvingTime = 600 // ms 
+  int prev_dist;
+  // new distance created due to curving time? d <= sqrt(threshold^2 + (vt)^2)
+  // accounted by nudge time 
+  int curvingSpeed = forwardSpeed - 10; 
   getDistance(1);
   if (distFront < distThreshold) {
+    distThresholdSide = distFront + 15; // difference in distance between front sensor and side sensor
     setMotors(0, 0);
     delay(100);
-    setMotors(100, -100);
+    setMotors(turnspeed, -turnspeed);
     getDistance(0);
     while (distSide > distThresholdSide) {
-      // Serial.println(distSide);
       getDistance(0);
     }
     setMotors(0, 0);
 
-    while (blacknum == 0) {
-      setMotors(forwardSpeed, forwardSpeed);
-      delay(forwardTime);
-      setMotors(0, 0);
-      delay(50);
-      setMotors(100, -100);
+    while (blacknum < 2) {
+    // while (true) {
+      //go forward
+      setMotors(curvingSpeed, curvingSpeed);
+      delay(curvingTime);
       getDistance(0);
-      while (distSide > distThresholdSide) {
-        getDistance(0);
-      }
+      // // go until object not detected / too far
+      // while (distSide < distThresholdSide + 5){
+      //   delay(10);
+      //   getDistance(0);
+      // }
+
       setMotors(0, 0);
-      delay(100);
+      delay(300);
+
+      setMotors(-turnspeed,turnspeed);
+      getDistance(0);
+      prev_dist = distSide
+      while (distSide > distThresholdSide) { // turn until object is detected
+        delay(10);
+        getDistance(0);
+
+        // turns right if object is detected to be further when turning; turning too much towards object
+        // if(distSide > prev_dist){
+        //   setMotors(turnspeed,-turnspeed);
+        // }
+
+        prev_dist = distSide;
+      }
+
+      setMotors(0, 0);
+      delay(300);
+
+      setMotors(-turnspeed,turnspeed); // nudge wiwii towards the object to account for any distance created
+      delay(nudgeTime);
+
       readSensor();
     }
-       
+    prevTime = millis();
+    prevPos = sensorPos;
   }
 }
 
@@ -254,7 +285,9 @@ void setup() {
 }
 
 void loop() {
-  // checkObject();
+  checkObject();
   readSensor();
   controller();
+  // getDistance(0);
+  // Serial.println(distSide);
 }
