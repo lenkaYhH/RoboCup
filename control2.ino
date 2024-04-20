@@ -5,9 +5,9 @@ int pins[5] = {52,50,48,46,44}; //left to right pins for ir sensor
 
 #define threshold 20
 
-#define k 50.0 // coefficient for error, type is float // 30.0
-#define kd 2.0 // coefficient for derivative of error // 8.0
-#define ki 75.0 // coefficient for integral of error // 50.0
+#define k 40.0 // coefficient for error, type is float // 30.0
+#define kd 50.0 // coefficient for derivative of error // 8.0
+#define ki 85.0 // coefficient for integral of error // 50.0
 
 #define iDur 96 // length of array
 
@@ -36,9 +36,9 @@ int pins[5] = {52,50,48,46,44}; //left to right pins for ir sensor
 #define curvingSpeed 80 
 #define nudgeFactor 50 // how much does the car turn when avoiding obstacles based on increasing/decreasing distance
 #define turnRadius 10 // radius for turning
-#define distThreshold 10
-#define distThresholdSide 25
-#define curvingTime 800
+#define distThreshold 10 // dist for fornt
+#define distThresholdSide 35 // dist avg for side, +-5
+#define curvingTime 200
 #define afterObjTime 500 // time spent turning right after getting over obstacles 
 float distFront, distSide;
 
@@ -146,19 +146,26 @@ void checkObject() {
     setMotors(0, 0);
 
     while (blacknum < 2) {
-    // while (true) {
-      //go forward
 
+      //go forward
       digitalWrite(13,HIGH);
       setMotors(curvingSpeed, curvingSpeed);
       delay(curvingTime);
       getDistance(0);
+      unsigned long t=millis();
       // go until object not detected / too far
-      while (distSide < distThresholdSide + 5){
+      while (distSide < distThresholdSide+2){
+        if(millis()>(t+500)){
+          setMotors(0,0);
+          delay(150);
+          setMotors(curvingSpeed, curvingSpeed);          
+          t=millis();
+        }
         getDistance(0);
         readSensor();
-        if (blacknum >= 2)goto endObj; // exit loop
+        if (blacknum >= 2)goto endObj;
       }
+
       setMotors(0, 0);
       digitalWrite(13,LOW);
 
@@ -166,9 +173,9 @@ void checkObject() {
 
       setMotors(-turnspeed,turnspeed);
       getDistance(0);
-      while (distSide > distThresholdSide) { // turn until object is detected
-        getDistance(0);
 
+      while (distSide > distThresholdSide+5) { // turn until object is detected
+        getDistance(0);
         readSensor();
         if (blacknum >= 2)goto endObj; // exit loop
       }
@@ -178,7 +185,7 @@ void checkObject() {
       
       // nudge wiwii towards the object to account for any distance created
       digitalWrite(13,HIGH);
-      if (turnRadius>distSide){//getting loser
+      if (turnRadius>distSide){//getting closer
         setMotors(turnspeed,-turnspeed);
       } else setMotors(-turnspeed,turnspeed);
       delay((int)(nudgeFactor*abs(turnRadius-distSide)));
@@ -187,11 +194,12 @@ void checkObject() {
       // since it's nudged, we need to have it go forward until it see the object on it's side again
       // go until object detected
       setMotors(curvingSpeed, curvingSpeed);
-      while (distSide > distThresholdSide + 5){
+      while (distSide > distThresholdSide){
         getDistance(0);
         readSensor();
         if (blacknum >= 2)goto endObj; // exit loop
       }
+      setMotors(0,0);
     }
     // Reset the data for dk
     endObj:;
