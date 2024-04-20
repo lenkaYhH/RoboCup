@@ -131,7 +131,7 @@ void getDistance(int x) { // x = 1 is front, x = 0 is side
 }
 
 void checkObject() {
-  int turnspeed = 140;
+  int turnspeed = 160;
   // new distance created due to curving time? d <= sqrt(threshold^2 + (vt)^2)
   // accounted by nudge time 
   getDistance(1);
@@ -334,9 +334,12 @@ void setup() {
 }
 
 void loop() {
-  checkObject();
+  // checkObject();
   readSensor();
   controller();
+  // getDistance(1);
   // getDistance(0);
+  // Serial.print(distFront);
+  // Serial.print(" ");
   // Serial.println(distSide);
 }
